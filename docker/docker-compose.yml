@@ -1,0 +1,82 @@
+version: '3.8'
+
+services:
+  # Document indexer service (runs once on startup)
+  indexer:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: rag-chatbot-indexer
+    environment:
+      - APP_ENV=production
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - CHROMA_PERSIST_DIR=/app/data/chroma
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+    volumes:
+      - chroma_data:/app/data/chroma
+      - ../data/documents:/app/data/documents:ro
+    command: ["sh", "/app/docker/scripts/init-index.sh"]
+    networks:
+      - rag-network
+
+  # Backend API service
+  backend:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: rag-chatbot-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - APP_ENV=production
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_MODEL=${OPENAI_MODEL:-gpt-3.5-turbo}
+      - TAVILY_API_KEY=${TAVILY_API_KEY:-}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - CHROMA_PERSIST_DIR=/app/data/chroma
+    volumes:
+      - chroma_data:/app/data/chroma
+      - logs_data:/app/logs
+    depends_on:
+      indexer:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    networks:
+      - rag-network
+
+  # Frontend web service
+  frontend:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.frontend
+    container_name: rag-chatbot-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+    networks:
+      - rag-network
+
+volumes:
+  chroma_data:
+    driver: local
+  logs_data:
+    driver: local
+
+networks:
+  rag-network:
+    driver: bridge
