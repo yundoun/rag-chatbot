@@ -1,4 +1,29 @@
+import ReactMarkdown from 'react-markdown'
 import { SourceList } from './SourceList'
+
+// 마크다운 컴포넌트 스타일 정의
+const markdownComponents = {
+  h1: ({ children }) => <h1 className="text-xl font-bold mt-4 mb-2 text-light-text-primary">{children}</h1>,
+  h2: ({ children }) => <h2 className="text-lg font-bold mt-4 mb-2 text-light-text-primary">{children}</h2>,
+  h3: ({ children }) => <h3 className="text-base font-semibold mt-3 mb-2 text-light-text-primary">{children}</h3>,
+  h4: ({ children }) => <h4 className="text-sm font-semibold mt-2 mb-1 text-light-text-primary">{children}</h4>,
+  p: ({ children }) => <p className="my-2 leading-relaxed">{children}</p>,
+  ul: ({ children }) => <ul className="my-2 ml-4 space-y-1 list-disc list-outside">{children}</ul>,
+  ol: ({ children }) => <ol className="my-2 ml-4 space-y-1 list-decimal list-outside">{children}</ol>,
+  li: ({ children }) => <li className="pl-1">{children}</li>,
+  strong: ({ children }) => <strong className="font-semibold text-light-text-primary">{children}</strong>,
+  em: ({ children }) => <em className="italic">{children}</em>,
+  code: ({ inline, children }) =>
+    inline ? (
+      <code className="bg-gray-100 text-red-600 px-1.5 py-0.5 rounded text-sm font-mono">{children}</code>
+    ) : (
+      <code className="block bg-gray-900 text-gray-100 p-3 rounded-lg text-sm font-mono overflow-x-auto my-2">{children}</code>
+    ),
+  pre: ({ children }) => <pre className="bg-gray-900 text-gray-100 p-3 rounded-lg overflow-x-auto my-2">{children}</pre>,
+  blockquote: ({ children }) => <blockquote className="border-l-4 border-accent-400 pl-4 my-2 italic text-light-text-secondary">{children}</blockquote>,
+  a: ({ href, children }) => <a href={href} className="text-accent-600 hover:text-accent-700 underline" target="_blank" rel="noopener noreferrer">{children}</a>,
+  hr: () => <hr className="my-4 border-light-border" />,
+}
 
 function WebSearchBanner({ type = 'info' }) {
   const isWarning = type === 'warning'
@@ -56,7 +81,9 @@ export function MessageBubble({ message }) {
           <WebSearchBanner type={isWebSearch ? 'warning' : 'info'} />
         )}
 
-        <div className="whitespace-pre-wrap leading-relaxed">{message.content}</div>
+        <div className="leading-relaxed">
+          <ReactMarkdown components={markdownComponents}>{message.content}</ReactMarkdown>
+        </div>
 
         {message.needsDisclaimer && !hasWebResults && (
           <div className="mt-3 p-2 bg-amber-50 rounded-lg text-amber-700 text-sm border border-amber-200">
