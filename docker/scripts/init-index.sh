@@ -15,18 +15,42 @@ echo "ChromaDB directory: $CHROMA_DIR"
 echo "Documents directory: $DOCUMENTS_DIR"
 echo ""
 
-# Function to check if ChromaDB is empty
+# Function to get document count from ChromaDB
+get_chroma_doc_count() {
+    python3 -c "
+import sys
+try:
+    import chromadb
+    from chromadb.config import Settings
+    client = chromadb.PersistentClient(
+        path='$CHROMA_DIR',
+        settings=Settings(anonymized_telemetry=False)
+    )
+    try:
+        collection = client.get_collection('documents')
+        print(collection.count())
+    except:
+        print(0)
+except Exception as e:
+    print(0)
+" 2>/dev/null
+}
+
+# Function to check if ChromaDB has indexed documents
 is_chroma_empty() {
     if [ ! -d "$CHROMA_DIR" ]; then
         return 0  # Directory doesn't exist = empty
     fi
 
-    # Check if directory has any files (excluding hidden)
-    if [ -z "$(ls -A "$CHROMA_DIR" 2>/dev/null)" ]; then
-        return 0  # Directory is empty
+    # Check actual document count in ChromaDB
+    doc_count=$(get_chroma_doc_count)
+    echo "   Current indexed documents: $doc_count"
+
+    if [ "$doc_count" -eq 0 ]; then
+        return 0  # No documents indexed = empty
     fi
 
-    return 1  # Directory has content
+    return 1  # Has indexed documents
 }
 
 # Function to check if reindex flag exists
