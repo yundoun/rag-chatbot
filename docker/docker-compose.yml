@@ -14,7 +14,7 @@ services:
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
     volumes:
       - chroma_data:/app/data/chroma
-      - ../data/documents:/app/data/documents:ro
+      - ../data/documents:/app/data/documents
     command: ["sh", "/app/docker/scripts/init-index.sh"]
     networks:
       - rag-network
